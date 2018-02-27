@@ -192,3 +192,82 @@ $('#result').append(`
 ```
 
 模板字符串（template string）是增强版的字符串，用反引号（`）标识。它可以当作普通字符串使用，也可以用来定义多行字符串，或者在字符串中嵌入变量。
+```javascript
+// 普通
+`In JavaScript '\n' is a line-head`
+
+// 多行
+`In JavaScript 
+    is a line-head`
+
+// 字符串中嵌入变量
+let name = 'Jame', age = 18;
+`Hello, this is ${name}, he is ${age} years old.`
+```
+
+模板字符串的回车和空格都是保留的，如果不想要空格和回车，可以用`trim`方法去除。
+
+
+`${}`大括号内部可以放入任意的表达式，可以进行运算。
+```javascript
+let x = 1,
+    y = 2;
+
+`${x} + ${y} = ${x + y}`; // 1 + 2 = 3
+
+`${x} + ${y*2} = ${x + y*2}`; //1 + 4 = 5
+
+let obj = {
+    x: 1,
+    y: 2
+}
+`${obj.x + obj.y}`; //3
+```
+
+模板字符串还能调用函数。
+```javascript
+function fn(){
+    return "Hello World";
+}
+`${fn()}`; //Hello World
+```
+
+如果`${}`中的值不是字符串，将按照一般规则转为字符串。如果模板字符串中的变量没有声明，则会报错。如果大括号内部是字符串，则会原样输出
+```javascript
+let msg = `err ${m}`; //报错，变量m没声明
+
+`${'hello'}`; //hello
+```
+模板字符串还能嵌套
+```javascript
+let msg = {
+    type: 'success',
+    content: 'yeah'
+}
+
+`this is a ${`${msg.type}`} msg , content is ${`${msg.content}`}`
+```
+如果需要引用模板字符串本身，在需要时执行，可以像下面这样写。
+```javascript
+// 方法一
+let str = 'return' + '`Hello ${name}!`';
+let func = new Function('name', str);
+func('Jack'); //Hello Jack!
+
+// 方法二
+let str = '(name) => `Hello ${name}!`';
+let func = eval.call(null, str);
+func('Jack')
+```
+***
+### 实例：模板编译
+暂时pass
+***
+### 标签模板
+pass
+***
+### String.raw()
+pass
+***
+### 模板字符串的限制
+pass
