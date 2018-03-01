@@ -136,4 +136,76 @@ const obj = {
 
 
 
+规避这种限制有两种方式：1、全局声明严格模式； 2、把函数包在一个立即执行的函数中。
+```javascript
+'use strict';
+function a(y = 1){
+
+}
+
+// 或者
+var doSomething = (function(){
+    'use strict';
+    return function(value = 40){
+        return value;
+    }
+}())
+```
+
+### name属性
+函数的`name`属性其实早就存在，只是到了ES6才写入标准。
+
+***
+## 箭头函数
+### 基本用法
+ ```javascript
+var a = num => num;
+
+// 等同于
+var a = function(num){
+    return num;
+}
+ ```
+
+如果箭头函数不需要参数或者需要多个参数，可以用圆括号代表参数部分。
+```javascript
+var f = () => 5;
+// 等同于
+var f = function(){ return 5 };
+
+var sum = (n1, n2) => n1 + n2;
+// 等同于
+var sum = function(n1, n2){
+    return n1 + n2;
+}
+
+```
+如果箭头函数的代码块部分多于一条语句，需要使用大括号将代码包裹住，并用`return`语句返回。如果返回的值是对象，可用括号扩住，或者用大括号扩住并用return返回。
+```javascript
+var sum = (n1, n2) => {return n1 + n2};
+
+var obj = id => {id: id, name: 'a'}; //报错
+var obj = id => ({id: id, name: 'a'});//不报错
+var obj = id => {return {id: id, name: 'a'}};//不报错
+```
+箭头函数可以和解构赋值结合
+```javascript
+var fn = ({x = 1, y = 2} ={}) => {return x + y};
+```
+
+箭头函数可以简化表达式，简化回调函数。
+```javascript
+const isEven = n => n % 2 == 0;
+const square = n => n * n;
+[1,2,3].map(x => x*2); //[2,4,6]
+```
+
+### 使用注意点
+**函数体内的`this`对象,就是定义时所在的对象,不是使用时的对象**
+
+**不可以当做构造函数,不能使用`new`命令，否则会报错**
+
+**不可以使用`arguments`对象，在函数体内不存在,可以用`rest`参数替代**
+
+**不可以使用`yield`命令，因此箭头函数不能用作 Generator 函数**
 

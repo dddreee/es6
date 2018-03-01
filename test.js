@@ -11,7 +11,7 @@ function copyObj(obj){
             
                 handle(source[k], target[k]);
             }else{
-                target[k] = source[k]
+                target[k] = source[k];
             }
         }
         return target
