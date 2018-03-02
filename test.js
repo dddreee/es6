@@ -19,3 +19,13 @@ function copyObj(obj){
     return handle(obj, {});
 }
 
+var fn = {
+    b: {
+        c: () => {
+            console.log(1);
+            console.log(this);
+        }
+    }
+}
+
+fn.b.c();

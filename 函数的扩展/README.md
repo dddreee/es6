@@ -209,3 +209,102 @@ const square = n => n * n;
 
 **不可以使用`yield`命令，因此箭头函数不能用作 Generator 函数**
 
+在箭头函数中this指向是固定的。
+```javascript
+function foo(){
+    setTimeout(() => {
+        console.log('id:' + this.id);
+    }, 100);
+}
+
+let id = 16;
+foo.call({id: 43});
+//id: 43
+```
+
+上面的代码中箭头函数作为参数传入setTimeout中，那this所绑定的作用域就是使用setTimeout方法的作用域。
+
+箭头函数可以让`setTimeout`里面的`this`，绑定定义时所在的作用域。
+```javascript
+function Timer(){
+    this.s1 = 0;
+    this.s2 = 0;
+    setInterval(() => this.s1++, 1000);
+    // 普通函数
+    setInterval(function(){
+        this.s2++;
+
+    }, 1000);
+}
+
+var timer = new Timer();
+setTimeout(() => { console.log(timer.s1) }, 3100);
+setTimeout(() => { console.log(timer.s2) }, 3100);
+// 3;
+// 0;
+
+function foo(){
+    return () => {
+        return () => {
+            return () => {
+                console.log('id: ' + this.id);
+            }
+        }
+    }
+}
+var f = foo.call({id: 1});      //id: 1
+var t1 = f.call({id: 2})()(); //id: 1
+var t2 = f().call({id: 3})(); //id: 1
+var t3 = f()().call({id: 4});//id: 1
+```
+
+除了`this`, `arguments`、`super`、`new.target`在箭头函数之中也不存在的。
+```javascript
+function foo(){
+    setTimeout(() => {
+        console.log(arguments);
+    }, 1000);
+}
+foo(1,2,3,4); //[1,2,3,4]
+```
+
+因为箭头函数内部没有this，因此改变`call apply bind`对箭头函数无效
+```javascript
+(function(){
+    return [
+        (() => this.x).bind({x: 'inner'})();
+    ]
+}).call({x: 'outer'});
+//['outer'];
+```
+
+### 嵌套的箭头函数
+```javascript
+function insert(value){
+    return {
+        into: function(array){
+            return {
+                after: function(afterValue){
+                    array.slice(array.indexOf(afterValue) + 1, 0, value);
+                    return array;
+                }
+            };
+        }
+    };
+}
+insert(2).into([1, 3]).after(1); //[1,2,3]
+
+// 上面是es5的写法，可以用es6的箭头函数
+let insert = (value) => ({
+    into: (array) => ({
+        after: (afterValue) => {
+            array.slice(array.indexOf(afterValue) + 1, 0, value);
+            return array;
+        }
+    })
+});
+```
+
+箭头函数还有一个功能，就是可以很方便地改写 λ 演算。这里不做赘述。
+
+### 双冒号运算符
