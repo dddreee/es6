@@ -308,3 +308,32 @@ let insert = (value) => ({
 箭头函数还有一个功能，就是可以很方便地改写 λ 演算。这里不做赘述。
 
 ### 双冒号运算符
+函数绑定运算符`::`,双冒号，左边是对象，右边是函数，该运算符会自动将左边的对象作为`this`绑定到右边的函数上。
+```javascript
+let foo = {a: 1};
+function bar(){
+    console.log(this.a);
+}
+
+foo::bar;
+//等同于
+bar.bind(foo);
+
+foo::bar(...args);
+bar.call(foo, ...args);
+
+const hasOwnProperty = Object.prototype.hasOwnProperty;
+function hasOwn(obj, key){
+    return obj::hasOwnProperty(key);
+}
+```
+如果`::`左侧是空的，右侧是一个对象的方法，那么默认绑定在这个对象上
+```javascript
+let method = ::obj.foo;
+// 等同于 
+obj::obj.foo;
+```
+
+### 尾调用优化
+
+
