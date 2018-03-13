@@ -124,4 +124,67 @@ desc.set.name; //set foo
 (new Function()).name ;//anonymous
 var doSomething = function(){}
 doSomething.bind().name; //bound doSomething
+
+// Symbol pass
+```
+
+## Object.is()
+ES5比较两个值是否相等，只有`==`和`===`两种运算符，然而NaN不等于自身，+0和-0能相等，ES6提出了同值相等算法，来解决这个问题。
+```javascript
++0 === -0; //true
+NaN === NaN; //false
+
+Object.is(+0, -0); //false
+Object.is(NaN, NaN); //true
+```
+
+## Object.assign()
+`Object.assign`方法用户合并对象，将源对象的可枚举属性，合并到目标对象。
+```javascript
+const target = {a: 1};
+
+const source1 = {b: 2};
+const source2 = {c: 3};
+Object.assign(target, source1, source2);
+target; //{a: 1, b: 2, c: 3}
+```
+这个方法的第一个参数是目标对象，之后的都是源对象
+
+**注意**， 如果存在同名属性，那么后面的会覆盖之前的。如果只有一个参数，`Object.assign`会直接返回该参数， 如果参数不是对象，则会先转成对象。由于`undefined`和`null`无法转成对象，就会报错！
+```javascript
+Object.assign({a: 1}); //{a: 1}
+typeof Object.assign(2); //'object'
+Object.assign(null); //或者传入的是undefined， 报错
+```
+
+如果其他的类型的值（字符串，数字，布尔），不会报错，除了字符串会作为数组拷贝入目标对象，其他类型都不会起作用。
+```javascript
+const v1 = 'abc';
+const v2 = true;
+const v3 = 10;
+
+const obj = Object.assign({}, v1, v2, v3);
+obj; //{'0': 'a', '1': 'b', '2': 'c'}
+```
+**必须是源对象自身的属性，并且是可枚举的属性才能拷贝**
+
+**注意点**
+    
+(1) `Object.assign`是浅拷贝
+
+(2)遇到同名的属性并且是嵌套的对象，实行的是整个替换，而不是添加属性。
+```javascript
+const obj1 = {a: {b: '1', c: '2'}}
+const obj2 = {a: {b: 'hello'}}
+
+Object.assign(obj1, obj2);// {a: {b: 'hello'}}
+```
+(3) 数组的处理，会将数组当作对象处理，数组的index作对象的key
+
+(4) 取值函数。`Object.assign`只进行值的复制，如果要复制的值是一个取值函数，那么将在求值后再复制
+```javascript
+const source = {
+    get foo(){return 1}
+}
+Obeject.assign({}, source); //{foo: 1}
 ```
