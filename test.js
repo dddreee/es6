@@ -29,3 +29,8 @@ var fn = {
 }
 
 fn.b.c();
+
+Number.prototype.toFixed = function(length){
+    var multi = Math.pow(10, length);
+    return Math.round(this*multi)/multi;
+}
