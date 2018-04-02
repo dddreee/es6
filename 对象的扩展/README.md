@@ -168,7 +168,7 @@ obj; //{'0': 'a', '1': 'b', '2': 'c'}
 ```
 **必须是源对象自身的属性，并且是可枚举的属性才能拷贝**
 
-**注意点**
+### **注意点**
     
 (1) `Object.assign`是浅拷贝
 
@@ -180,6 +180,9 @@ const obj2 = {a: {b: 'hello'}}
 Object.assign(obj1, obj2);// {a: {b: 'hello'}}
 ```
 (3) 数组的处理，会将数组当作对象处理，数组的index作对象的key
+```javascript
+Object.assign([1,2,3], [4,5]); //[4, 5, 3]
+```
 
 (4) 取值函数。`Object.assign`只进行值的复制，如果要复制的值是一个取值函数，那么将在求值后再复制
 ```javascript
@@ -188,3 +191,118 @@ const source = {
 }
 Obeject.assign({}, source); //{foo: 1}
 ```
+### 常见用途
+(1)为对象添加属性
+```javascript
+class Point{
+    constructor(x, y){
+        Object.assign(this, {x, y})
+    }
+}
+```
+通过上述方法，将x，y属性添加到Point的实例对象
+
+(2)为对象添加方法
+```javascript
+Object.assign(SomeClass.prototype, {
+    fn(){
+
+    },
+    fn2(){
+
+    }
+})
+```
+
+(3)克隆对象
+
+克隆只能克隆自身的属性，继承的属性无法克隆，可以通过克隆原型对象来获取继承的值
+```javascript
+function clone(obj){
+    let objProto = Object.getPrototypeOf(obj);
+    return Object.assign(objProto, obj)
+}
+```
+(4)合并多个对象。
+```javascript
+const merge = (target, ...sources) => Object.assign(target, ...sources);
+const merge2 = (...sources) => Object.assign({}, ...sources); //返回一个新对象
+```
+(5)指定默认值
+```javascript
+const DEFAULT = {
+    name: '',
+    age: ''
+}
+function processContent(options){
+    // 如果options没有，那么返回DEFAULT，如果有，就会覆盖对应的属性
+    options = Object.assign(DEFAULT, options);
+    console.log(options);
+}
+```
+---
+## 属性的可枚举型和遍历
+属性的可枚举型可以通过`Object.getOwnPropertyDescriptor`方法获取
+```javascript
+const obj = {a: 1}
+Object.getOwnPropertyDescriptor(obj, 'a');
+// {
+//     value: 1,
+//     writable: true,
+//     enumerable: true,
+//     configurable: true
+// }
+```
+如果`enumerable`值是`false`,以下几种操作就会跳过
+ - `for...in`循环：只会循环自身和继承的可枚举属性
+ - `JSON.stringify`会跳过不可枚举的属性
+ - `Object.assign`同样会跳过自身不可枚举的属性
+ - `Object.keys()`返回自身所有可枚举的键名
+
+另外，ES6 规定，所有 Class 的原型的方法都是不可枚举的。
+```javascript
+Object.getOwnPropertyDescriptor(class {foo(){}}.prototye, 'foo').enumerable; //false
+```
+### 属性的遍历
+ES6有5种方法可以遍历对象：
+
+(1)`for...in`循环遍历对象自身的和继承的可枚举属性
+
+(2)`Object.keys(obj)`返回一个数组，包括自身的（不含继承的）所有可枚举属性（不含Symbol属性）的键名。
+
+(3)`Object.getOwnPropertyNames(obj)`返回一个数组，包含自身的所有属性（不含Symbol属性，但是包括不可枚举属性）的键名。
+
+(4)`Object.getOwnPropertySymbols(obj)`Object.getOwnPropertySymbols返回一个数组，包含对象自身的所有 Symbol 属性的键名。
+
+(5)`Reflect.ownKeys(obj)`返回一个数组，**包含自身所有的键名。**
+
+### Object.getOwnPropertyDescriptors()
+ES2017引入了这个方法，返回对象自身所有属性（非继承）的描述对象，如果一个属性没有值只有取值函数或者赋值函数，`Object.assign()`方法不能正确拷贝，可以结合`Object.getOwnPropertyDescriptors()`和`Object.defineProperty`正确拷贝。
+```javascript
+const obj = {
+    foo: 123,
+    get bar(){
+        return 'abc'
+    }
+}
+
+Object.getOwnPropertyDescriptors(obj);
+/*
+{
+    foo: {
+        value: 123,
+        writable: true,
+        enumerable: true,
+        configurable: true
+    },
+    bar: {
+        get: [Function: get bar],
+        set: undefined,
+        enumerable: true,
+        configurable: true
+    }
+}
+*/
+```
+
+
