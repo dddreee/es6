@@ -304,5 +304,50 @@ Object.getOwnPropertyDescriptors(obj);
 }
 */
 ```
+上面的代码中，`getOwnPropertyDescriptors`方法返回一个对象，所有源对象的属性名都是这个对象的属性名，对应的值就是这个属性的描述对象。这个方法很容易实现：
+```javascript
+function getOwnPropertyDescriptors(obj){
+    const result = {}
+    for(let key of Reflect.ownKeys(obj)){
+        result[k] = Object.getOwnPropertyDescriptor(obj, key);
+    }
+
+    return result;
+}
+```
+因为`Object.assign()`方法无法正确拷贝`get set`方法，因此引入了这个方法。
+```javascript
+const source = {
+    set foo(value){
+        console.log(value)
+    }
+}
+
+const target1 = {}
+Object.assign(target1, source);
+Object.getOwnPropertyDescriptor(target1, 'foo'); 
+/*
+{ 
+    value: undefined,
+    writable: true,
+    enumerable: true,
+    configurable: true 
+}
+*/
+```
+上面代码中，`source`对象的foo属性的值是一个赋值函数，`Object.assign`方法将这个属性拷贝给`target1`对象，结果该属性的值变成了`undefined`。这是因为`Object.assign`方法总是拷贝一个属性的值，而不会拷贝它背后的赋值方法或取值方法。
+
+此时可以结合`Object.defineProperties`和`Object.getOwnPropertyDescriptors`来实现正确拷贝。
+```javascript
+const source = {
+    set foo(value){
+        console.log(value);
+    },
+    name: 123
+}
+const target2 = {}
+Object.defineProperties(target2, Object.getOwnPropertyDescriptors(source));
+```
+
 
 
