@@ -348,6 +348,35 @@ const source = {
 const target2 = {}
 Object.defineProperties(target2, Object.getOwnPropertyDescriptors(source));
 ```
+### __proto__属性
+这个属性可以读取和设置当前对象的prototype对象，目前所有浏览器都支持这个属性。
+在实现上__proto__调用的是Object.prototype.__proto__。
+```javascript
+Obejct.defineProperty(Object.prototype, '__proto__', {
+    get(){
+        let _thisObj = Object(this);
+        return Object.getPrototypeOf(_thisObj);
+    },
+    set(proto){
+        if(this === undefined || this === null){
+            throw new TypeError();
+        }
+        if(!isObject(this)){
+            return undefined;
+        }
+        if(!isObject(proto)){
+            return undefined;
+        }
+        let status = Reflect.setPrototypeOf(this, proto);
+        if(!status){
+            throw new TypeError();
+        }
+    }
+});
 
+function isObject(obj){
+    return Object(obj) === obj;
+}
+```
 
 
