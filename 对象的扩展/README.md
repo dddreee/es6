@@ -378,5 +378,137 @@ function isObject(obj){
     return Object(obj) === obj;
 }
 ```
+### Object.setPrototypeOf()
+这个方法和`__proto__`作用相同，用来设置一个对象的`prototype`对象, 参数对象本身。
+```javascript
+//格式
+Object.setPrototypeOf(obj, prototype);
 
+//demo
+const o = Object.setPrototypeOf({}, null);
 
+//等同于
+function setProto(obj, prototype){
+    obj.__proto__ = prototype;
+    return obj;
+}
+```
+- 如果第一个参数不是对象，那么会自动转成对象。但是由于会返回第一个参数，所以这个操作没有任何效果。
+- `null` 和 `undefined` 无法转成对象，如果是第一个参数，会报错
+```javascript
+Object.setPrototypeOf(1, {}) === 1;
+Object.setPrototypeOf('s', {}) === 's';
+Object.setPrototypeOf(true, {}) === true;
+```
+### Object.getPrototypeOf()
+- 读取一个对象的原型对象。
+- 如果参数不是对象，则会转成对象
+- `null` 和 `undefined` 会报错
+
+### super 关键词
+this关键字总是指向函数所在的当前对象，ES6有新增了新的关键字`super`, 指向当前对象的原型对象。
+```javascript
+const proto = {
+    foo: 'hello'
+}
+const obj = {
+    foo: 'world',
+    find(){
+        return super.foo;
+    }
+}
+Object.setPrototypeOf(obj, proto);
+obj.find(); //hello
+```
+- **注意，`super` 只可用在对象的方法中，用在其他地方都会报错**
+```javascript
+//报错
+const obj = {
+    foo: super.foo
+}
+
+//报错
+const obj = {
+    foo: () => super.foo
+}
+//报错
+const obj = {
+    foo: function(){
+        return super.foo
+    }
+}
+```
+上面的三种情况都会报错
+- 第一个是因为是给属性赋值，报错了
+- 第二个和第三个都是在javascript引擎认为这不是对象方法，而是将一个函数赋值给对象的属性，只有`foo(){}`简写的方式才认为是定义对象方法。
+
+JavaScript 引擎内部，`super.foo`等同于`Object.getPrototypeOf(this).foo`（属性）或`Object.getPrototypeOf(this).foo.call(this)`（方法）。
+
+```javascript
+const proto = {
+    x: 'hello',
+    foo(){
+        console.log(this.x)
+    }
+}
+
+const obj = {
+    x: 'world',
+    foo(){
+        super.foo();
+    }
+}
+
+Object.setPrototypeOf(obj, proto);
+obj.foo(); //world
+```
+上面代码中，super.foo指向原型对象proto的foo方法，但是绑定的this却还是当前对象obj，因此输出的就是world。
+
+## `Object.keys()`,  `Object.values()`, `Object.entries()`
+- `Object.keys()` 返回对象**自身可遍历**属性的数组集合
+- `Object.values()` 返回对象所有 **自身可遍历** 属性的值的数组合集
+- `Object.entries()`方法返回一个数组，成员是参数对象自身的（不含继承的）所有可遍历（enumerable）属性的键值对数组。
+
+### Object.values
+返回的数组顺序跟属性的顺序一致
+```javascript
+const obj = {
+    100: 'a',
+    2: 'b',
+    7: 'c'
+}
+Object.values(obj); //['b', 'c', 'a']
+```
+
+- Object.values会过滤属性名为 Symbol 值的属性。
+- 如果参数是字符串，会返回各个字符组成的数组
+- 如果不是对象，则会转成对象。由于数值和布尔值的包装对象，都不会为实例添加非继承的属性，会返回空数组
+```javascript
+Object.values('foo'); //['f', 'o', 'o']
+Object.values({[Symbol()]: 'str', a: 2}); //[2]
+
+Object.values(42); //[]
+Object.values(true); //[]
+```
+
+### Object.entries()
+与Object.values()的行为基本一致，除了返回值不同
+
+Object.entries的用途：
+- 遍历对象的属性
+- 将对象转成`Map`结构
+```javascript
+//遍历属性
+let obj = {a: 1, b: 2}
+for(let [k, v] of Object.entries(obj)){
+    console.log(
+        `${JSON.stringify(k)}: ${JSON.stringify(v)}`
+    )
+}
+
+//转成map结构
+const o = {foo: '123', bar: '456'}
+const map = new Map(Object.entries(o));
+```
+
+## 扩展运算符
