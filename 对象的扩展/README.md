@@ -561,3 +561,57 @@ n; //{a: 1, b: 2}
 //上面的等同于`Object.assign`
 let zClone = Object.assign({}, z);
 ```
+扩展运算符只能拷贝对象实例的属性，继承的属性可以通过以下方法拷贝, 因为`__proto__`在非浏览器环境下不一定支持，一般使用第2和第3中方法
+```javascript
+//方法1
+const obj = {
+
+}
+const copyObj = {
+    __proto__: Object.getPrototypeOf(obj),
+    ...obj
+}
+
+//方法2
+const copyObj = Object.assign(Object.getPrototypeOf(obj), obj);
+
+//方法3
+const copyObj = Object.create(Object.getPrototypeOf(obj), Object.getOwnPropertyDescriptors(obj))
+```
+- 与数组的扩展运算符一样，对象的扩展符后面可以跟表达式
+- 如果扩展运算符后面是空对象，没有任何效果
+- 跟解构赋值不同，扩展运算符后面可以跟null和undefined，不会报错，会被忽略。
+```javascript
+const obj = {
+    ...(true ? {a: 1} : {})
+}
+
+const obj = {
+    ...{},
+    x: 1
+}
+
+const obj = {
+    ...null,
+    ...undefined
+}
+```
+扩展运算符的参数对象之中，如果有取值函数get，这个函数是会执行的。
+```javascript
+//不会报错
+let aWithGetter = {
+    ...a,
+    get x(){
+        throw new Error(`not throw yet`)
+    }
+}
+// 会抛出错误，因为 x 属性被执行了
+let runtimeError = {
+    ...a,
+    ...{
+        get x(){
+            throw new Error(`throw now`)
+        }
+    }
+}
+```
