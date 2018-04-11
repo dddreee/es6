@@ -126,3 +126,50 @@ Map 结构原生提供三个遍历器生成函数和一个遍历方法。
 - values()：返回键值的遍历器。
 - entries()：返回所有成员的遍历器。
 - forEach()：遍历 Map 的所有成员。
+
+Map的遍历顺序就是插入顺序！
+```javascript
+const map = new Map([
+    ['F', 'no'],
+    ['T', 'yes']
+]);
+
+for(let key of map.keys()){
+    console.log(key);
+}
+//F
+//T
+
+for(let v of map.values()){
+    console.log(v);
+}
+// no
+// yes
+
+for(let [k, v] of map.entries()){
+    console.log(k + ':' + v);
+}
+//F: no
+//T: yes
+
+// 等同于使用map.entries()
+for (let [key, value] of map) {
+  console.log(key, value);
+}
+```
+
+### 与其他数据结构转换
+- Map用 ... 转为数组
+- 数组通过 new Map 可以转为Map结构
+- 如果Map结构的key全是字符串,可以无损转为对象。如果键名有非字符串的，那么会转为字符串再作为对象的键名
+- 对象转为map，可以获取对象的key，并遍历对象，通过set方法添加map成员
+- Map转JSON，如果键名是字符串，可以选择对象转为JSON；如果存在非字符串，可以选择数组转为JSON
+- JSON转Map，就是上一个的逆操作
+
+## WeakMap
+WeakMap和Map类似，只要两点不同：
+
+1. `WeakMap`只接受对象做键名（null除外），不接受其他类型的值做键名
+2. `WeakMap`的键名所指向的对象，不计入垃圾回收机制。
+
+其他暂时不看，需要是翻看原文档。
