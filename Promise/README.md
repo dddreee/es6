@@ -114,3 +114,27 @@ getJSON("/posts.json").then(function(json) {
   console.error('出错了', error);
 });
 ```
+
+reject函数常用的参数是Error对象，resolve函数的参数除了正常的值，还有可能是另外一个promise对象。
+```javascript
+const p1 = new Promise((resolve, reject) => {
+    //...
+});
+
+const p2 = new Promise((resolve, reject) => {
+    resolve(p1);
+});
+```
+ `p2` 的 `resolve` 方法将 `p1` 作为参数，此时 `p1` 的状态会传给 `p2` ，也就是说 `p2` 的状态取决于 `p1` 的状态。如果 `p1` 的状态是 `pending` ，那么 `p2` 的回调函数会等待 `p1` 状态改变；如果 `p1` 的状态已经是 `resolved` 或者 `rejected` ，那么 `p2` 的回调函数会立即执行。
+ ```javascript
+const p1 = new Promise((resolve, reject) => {
+    setTimeout(() => reject(new Error('fail')), 3000);
+});
+
+const p2 = new Promise((resolve, reject) => {
+    setTimeout(() => resolve(p1), 1000);
+});
+
+p2.then(result => console.log(result)).catch((err) => console.log(err));
+ ```
+
