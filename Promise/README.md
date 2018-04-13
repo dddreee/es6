@@ -138,3 +138,57 @@ const p2 = new Promise((resolve, reject) => {
 p2.then(result => console.log(result)).catch((err) => console.log(err));
  ```
 
+## 3. Promise.prototype.then()
+`then` 方法第一个参数是 `resolve` 状态调用的回调函数， 第二个参数(可选)是 `reject` 状态调用的回调函数。
+
+`then` 方法返回的是一个**全新的 `promise` 实例**。因此 `then` 之后可以调用另一个 `then` 方法。
+```javascript
+getJson('./t.json').then(json => {
+    return json.post
+}).then(post => {
+    console.log(post);
+    //..
+});
+```
+上面的代码使用 `then` 方法，依次指定了两个回调函数。第一个回调函数完成以后，会将返回结果作为参数，传入第二个回调函数。
+
+采用链式的 `then` ，可以指定一组按照次序调用的回调函数。这时，前一个回调函数，有可能返回的还是一个 `Promise` 对象（即有异步操作），这时后一个回调函数，就会等待该 `Promise` 对象的状态发生变化，才会被调用。
+
+```javascript
+getJSON("/post/1.json").then(function(post) {
+    return getJSON(post.commentURL);
+}).then(function funcA(comments) {
+    console.log("resolved: ", comments);
+}, function funcB(err){
+    console.log("rejected: ", err);
+});
+```
+
+上面代码中，第一个 `then` 方法指定的回调函数，返回的是另一个 `Promise` 对象。这时，第二个 `then` 方法指定的回调函数，就会等待这个新的 `Promise` 对象状态发生变化。如果变为 `resolved` ，就调用 `funcA` ，如果状态变为 `rejected` ，就调用 `funcB` 。
+
+## 4. Promise.prototype.catch()
+`Promise.prototype.catch` 方法是 `.then(null, rejection)` 的别名，用于指定发生错误时的回调函数。
+1. 如果 `promise` 状态转为 `rejected` ，就会调用 catch 方法
+
+2. `then` 指定的回调函数运行出错，也会被 `catch` 捕获并调用
+
+3. 如果 `Promise` 状态变成 `resolve` ，再抛出错误是无效的
+
+4. promise 内部运行出错不会中断影响外部js的运行
+
+```javascript
+//1
+getJson('./t.json').then((result) => {
+    //...
+}).catch((err) => {
+     // 处理 getJSON 和 前一个回调函数运行时发生的错误
+    console.log(err)
+});
+//与上面的等同， 不过推荐上面的写法。
+getJson('./t.json').then(result => {
+    //...
+}).then(null, err => {
+    console.log(err);
+});
+
+```
