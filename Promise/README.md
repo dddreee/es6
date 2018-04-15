@@ -174,7 +174,17 @@ getJSON("/post/1.json").then(function(post) {
 
 3. 如果 `Promise` 状态变成 `resolve` ，再抛出错误是无效的
 
-4. promise 内部运行出错不会中断影响外部js的运行
+4. `promise` 内部运行出错不会中断影响外部js的运行
+
+5. `Promise` 对象的错误具有“冒泡”性质，会一直向后传递，直到被捕获为止。也就是说，错误总是会被下一个 `catch` 语句捕获。
+
+6. 一般来说，不要在then方法里面定义 `Reject` 状态的回调函数（即then的第二个参数），总是使用 `catch` 方法。
+
+7. `Node` 有一个 `unhandledRejection` 事件，专门监听未捕获的 `reject` 错误，上面的脚本会触发这个事件的监听函数，可以在监听函数里面抛出错误。 `unhandledRejection` 事件的监听函数有两个参数，第一个是错误对象，第二个是报错的 `Promise` 实例，它可以用来了解发生错误的环境信息。
+
+8. 一般总是建议， `Promise` 对象后面要跟 `catch` 方法，这样可以处理 `Promise` 内部发生的错误。 `catch` 方法返回的还是一个 `Promise` 对象，因此后面还可以接着调用 `then` 方法。
+
+9. catch方法之中，还能再抛出错误。
 
 ```javascript
 //1
@@ -190,5 +200,73 @@ getJson('./t.json').then(result => {
 }).then(null, err => {
     console.log(err);
 });
+//7
+process.on('unhandledRejection', function (err, p) {
+  throw err;
+});
+
+//8.
+const someAsyncThing = function() {
+  return new Promise(function(resolve, reject) {
+    // 下面一行会报错，因为x没有声明
+    resolve(x + 2);
+  });
+};
+someAsyncThing()
+.catch(function(error) {
+  console.log('oh no', error);
+})
+.then(function(result) {
+  console.log('carry on');
+  console.log(result);
+});
+// oh no [ReferenceError: x is not defined]
+// carry on
 
 ```
+## 5. Promise.prototype.finally()
+`finally` 方法用于指定不管 Promise 对象最后状态如何，都会执行的操作。该方法是 **`ES2018`** 引入标准的。
+
+不管 `promise` 最后的状态，在执行完 `then` 或 `catch` 指定的回调函数以后，都会执行finally方法指定的回调函数。
+
+ `finally` 方法的回调函数不接受任何参数，这意味着没有办法知道，前面的 Promise 状态到底是 `fulfilled` 还是 `rejected` 。这表明， `finally` 方法里面的操作，应该是与状态无关的，不依赖于 `Promise` 的执行结果。
+
+  `finally` 方法总是会返回原来的值。
+```javascript
+//finally的实现
+Promise.prototype.finally = function (callback) {
+  let P = this.constructor;
+  return this.then(
+    value  => P.resolve(callback()).then(() => value),
+    reason => P.resolve(callback()).then(() => { throw reason })
+  );
+};
+
+// resolve 的值是 undefined
+Promise.resolve(2).then(() => {}, () => {})
+
+// resolve 的值是 2
+Promise.resolve(2).finally(() => {})
+
+// reject 的值是 undefined
+Promise.reject(3).then(() => {}, () => {})
+
+// reject 的值是 3
+Promise.reject(3).finally(() => {})
+```
+
+## 6. Promise.all()
+`Promise.all` 方法用于将多个 `Promise` 实例，包装成一个新的 `Promise` 实例。这个方法接受一个数组(或者是具有 `Iterator` 接口,并且每个成员都是 `Promise` 实例)作为参数，数组成员都是 Promise 的实例。
+```javascript
+const p = Promise.all([p1, p2, p3]);
+```
+
+（1）只有`p1、p2、p3`的状态都变成 `fulfilled` ，p的状态才会变成 `fulfilled` ，此时p1、p2、p3的返回值组成一个数组，传递给p的回调函数。
+
+（2）只要`p1、p2、p3`之中有一个被 `rejected` ，p的状态就变成 `rejected` ，此时第一个被 `reject` 的实例的返回值，会传递给p的回调函数。
+
+注意，如果作为参数的 `Promise` 实例，自己定义了 `catch` 方法，那么它一旦被 `rejected` ，并不会触发 `Promise.all()` 的 `catch` 方法。
+
+执行了 `catch` 方法后返回的新的 `Promise` 实例状态会变为 `fulfilled`
+
+## 7. Promise.race()
