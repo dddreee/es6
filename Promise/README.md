@@ -270,3 +270,156 @@ const p = Promise.all([p1, p2, p3]);
 执行了 `catch` 方法后返回的新的 `Promise` 实例状态会变为 `fulfilled`
 
 ## 7. Promise.race()
+`Promise.race` 方法同样是将多个 `Promise` 实例, 包装成一个 `Promise` 实例。
+
+只要p1、p2、p3之中有一个实例率先改变状态，p的状态就跟着改变。那个率先改变的 Promise 实例的返回值，就传递给p的回调函数
+```javascript
+const promise = Promise.race([p1, p2, p3]);
+promise.then(resolve => {
+    //...
+}).catch(err => {
+    //...
+});
+```
+
+`Promise.race` 方法的参数与 `Promise.all` 方法一样，如果不是 `Promise` 实例，就会先调用下面讲到的 `Promise.resolve` 方法，将参数转为 `Promise` 实例，再进一步处理。
+
+
+## 8. Promise.resolve()
+ `Promise.resolve` 方法将现有对象转变成一个 `promise` 对象。 `Promise.resolve` 的参数有4中情况。
+ 1. 参数是一个 `promise` 实例，那么 `Promise.resolve` 不作任何修改，返回这个参数。
+
+ 2. 参数是一个 `thenable` 对象(具有 then 方法的对象 )。 `Promise.resolve` 会将这个对象转为 `promise` 对象，然后执行对象的 then 方法。
+
+ 3. 参数不是具有 `then` 方法的对象，或根本就不是对象。`Promise.resolve` 会返回一个新 `promise` 对象，状态为 `resolve` 。同时参数会传给 `then` 的回调函数作参数
+
+ 4. 不带任何参数。返回一个 `resolve` 状态的 `Promise` 对象。
+ ```javascript
+//1
+const p1 = new Promise((resolve, reject) => {
+    resolve(1);
+});
+const p1_re = Promise.resolve(p1);
+pr_re === p1;
+
+//2
+let thenable = {
+    then: (resolve, reject) => {
+        resolve('thenable');
+    }
+}
+let p2_re = Promise.resolve(thenable);
+p2_re.then(result => {
+    console.log(result);
+}); //thenable
+
+//3
+let p3 = Promise.resolve('hello');
+p3.then(result => {
+    console.log(result);
+    //hello
+});
+
+//4
+let p4 = Promise.resolve();
+p4.then(result => {
+    console.log(123);
+});
+
+setTimeout(function () {
+  console.log('three');
+}, 0);
+
+Promise.resolve().then(function () {
+  console.log('two');
+});
+
+console.log('one');
+
+// one
+// two
+// three
+ ```
+ `setTimeout(fn, 0)` 在下一轮“事件循环”开始时执行，`Promise.resolve()` 在本轮“事件循环”结束时执行，`console.log('one')` 则是立即执行，因此最先输出。
+## 9. Promise.reject()
+`Promise.reject(reason)` 方法也会返回一个新的 Promise 实例，该实例的状态为 `rejected`。
+
+与 `Promise.resolve()` 不同的是， `Promise.reject()` 方法的参数，会原封不动地作为reject的理由，变成后续方法的参数。
+```javascript
+const p = Promise.reject('error');
+//等同于
+const p = new Promise((resolve, reject) => {
+    reject('error')
+});
+p.catch(err => {
+    console.log(err); //error
+});
+
+//Promise.reject方法的参数会原封不动的传给回调函数
+const thenable = {
+    then: (resolve, reject) => {
+        reject('error')
+    }
+}
+const p = Promise.reject(thenable);
+p.then(null, err => {
+    console.log(err === thenable); //tue
+})
+```
+
+## 10. 应用
+1. 加载图片，我们可以将图片的加载写成一个Promise，一旦加载完成，Promise的状态就发生变化。
+```javascript
+const preloadImage = function(path){
+    return new Promise((resolve, reject) => {
+        var image = new Image();
+        image.onload = resolve;
+        image.onerror = reject;
+        image.src = path;
+    });
+}
+```
+2. Generator 函数与 Promise 的结合
+
+- 使用 Generator 函数管理流程，遇到异步操作的时候，通常返回一个Promise对象。
+```javascript
+function getFoo(){
+    return new Promise(function(resolve, reject){
+        resolve('foo');
+    });
+}
+
+const g = function* (){
+    try{
+        const foo = yield getFoo();
+        console.log(foo);
+    }catch (e){
+        console.log(e);
+    }
+}
+
+function run(generator){
+    const it = generator();
+
+    function go(result){
+        if(result.done){
+            return result.value
+        }
+        return result.value.then(function(value){
+            return go(it.next(value));
+        }, function(error){
+            return go(it.throw(error));
+        })
+    }
+    go(it.next());
+}
+
+run(g);
+```
+上面代码的 `Generator` 函数g之中，有一个异步操作 `getFoo` ，它返回的就是一个 `Promise` 对象。函数 `run` 用来处理这个 `Promise` 对象，并调用下一个 `next` 方法。
+
+## 11. Promise.try()
+emmm 等async吧，Promise.try() 传入的参数如果是同步函数，那么就同步执行，如果是异步的就异步执行。
+
+---
+done.
