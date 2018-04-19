@@ -77,7 +77,7 @@ function idMaker() {
 ## 2. 默认Iterator接口
 一种数据结构只要部署了 Iterator 接口，我们就称这种数据结构是“可遍历的”（iterable）。
 
-ES6规定，默认的 Iterator 接口部署在数据结构的 Symbol.iterator 属性。或者说只要数据结构有 Symbol.iterator属性，就能认为是可遍历的。 Symbol.iterator 属性本身是一个函数，就是当前数据结构默认的遍历器生成函数。执行这个函数，就会返回一个遍历器。至于属性名Symbol.iterator，它是一个表达式，返回Symbol对象的iterator属性，这是一个预定义好的、类型为 Symbol 的特殊值，所以要放在方括号内（参见《Symbol》一章）。
+ES6规定，默认的 `Iterator` 接口部署在数据结构的 `Symbol.iterator` 属性。或者说只要数据结构有 `Symbol.iterator` 属性，就能认为是可遍历的。 `Symbol.iterator` 属性本身是一个函数，就是当前数据结构默认的遍历器生成函数。执行这个函数，就会返回一个遍历器。至于属性名 `Symbol.iterator` ，它是一个表达式，返回 `Symbol` 对象的 `iterator` 属性，这是一个预定义好的、类型为 `Symbol` 的特殊值，所以要放在方括号内（参见《Symbol》一章）。
 ```javascript
 const obj = {
     [Symbol.iterator]: function(){
@@ -90,5 +90,63 @@ const obj = {
             }
         }
     }
+}
+```
+原生具备 Iterator 接口的数据：
+- Array
+- Map
+- Set
+- String
+- TypeArray
+- 函数的arguments对象
+- NodeList 对象
+
+下面是数组的 Symbol.iterator 属性
+```javascript
+let arr = ['a', 'b', 'c'];
+let iter = arr[Symbol.iterator]();
+
+iter.next(); //{value: 'a', done: false}
+iter.next(); //{value: 'b', done: false}
+iter.next(); //{value: 'c', done: false}
+iter.next(); //{value: undefined, done: true}
+```
+对于原生部署Iterator 接口的数据结构，for...of循环会自动遍历它们。除此之外，其他数据结构的Iterator接口，都需要自己在Symbol.iterator属性上面部署，这样才会被for...of 循环遍历。
+
+对象（Object）之所以没有默认部署 Iterator 接口，是因为对象的哪个属性先遍历，哪个属性后遍历是不确定的，需要开发者手动指定。本质上，遍历器是一种线性处理，对于任何非线性的数据结构，部署遍历器接口，就等于部署一种线性转换。不过，严格地说，对象部署遍历器接口并不是很必要，因为这时对象实际上被当作 Map 结构使用，ES5 没有 Map 结构，而 ES6 原生提供了。
+
+一个对象如果要具备可被for...of循环调用的 Iterator 接口，就必须在Symbol.iterator的属性上部署遍历器生成方法（原型链上的对象具有该方法也可）。
+
+```javascript
+class RangeIterator{
+    constructor(start, stop){
+        this.value = start;
+        this.stop = stop;
+    }
+    [Symbol.iterator](){
+        return this;
+    }
+
+    next(){
+        var value = this.value;
+        if(value < this.stop){
+            this.value ++;
+            return {
+                done: false,
+                value: value
+            }
+        }
+        return {
+            done: true,
+            value: undefined
+        }
+    }
+}
+
+function range(start, stop){
+    return new RangeIterator(start, stop);
+}
+for(var value of range(0, 3)){
+    console.log(value); //0, 1, 2
 }
 ```
