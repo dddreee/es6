@@ -150,3 +150,85 @@ for(var value of range(0, 3)){
     console.log(value); //0, 1, 2
 }
 ```
+
+下面是通过遍历器实现指针结构的例子
+```javascript
+function Obj(value){
+    this.value = value;
+    this.next = null;
+}
+
+Object.prototype[Symbol.iterator] = function(){
+    var iterator = {
+        next: next
+    }
+
+    var current = this;
+
+    function next(){
+        if(current){
+            var value = current.value;
+            current = current.next;
+            return {
+                done: false,
+                value: value
+            }
+        }else {
+            return {
+                done: true
+            }
+        }
+    }
+
+    return iterator
+}
+
+var one = new Obj(1);
+var two = new Obj(2);
+var three = new Obj(3);
+
+one.next = two;
+two.next = three;
+
+for(var i of one){
+    console.log(i);//1 2 3
+}
+```
+上述代码首先在构造函数的原型链上部署`Symbol.iterator`方法， 调用该方法会返回遍历器对象`iterator`，调用该对象的next方法，返回一个值的时候，自动将内部指针指向下一个实例。
+
+下面是另一个为对象添加`Iterator`接口
+```javascript
+let obj = {
+    data: ['hello', 'world'],
+    [Symbol.iterator](){
+        const self = this;
+        let index = 0;
+        return {
+            next(){
+                if( index < self.data.length){
+                    return {
+                        value: self.data[index++],
+                        done: false
+                    }
+                }else{
+                    return {
+                        value: undefined,
+                        done: true
+                    }
+                }
+                
+            }
+        }
+    }
+}
+```
+
+对于类似数组的对象(存在数值键名和 `length` 属性),部署 `Iterator` 接口，有一个简便方法，就是 `Symbol.iterator` 方法直接引用数组的 `Iterator` 接口。
+```javascript
+NodeList.prototype[Symbol.iterator] = Array.prototype[Symbol.iterator]
+// 或者
+NodeList.prototype[Symbol.iterator] = [][Symbol.iterator];
+
+[...document.querySelectorAll('div')]//就可以执行了
+```
+`NodeList` 对象是类似数组的对象，本来就具有遍历接口，可以直接遍历。上面代码中，我们将它的遍历接口改成数组的 `Symbol.iterator` 属性，可以看到没有任何影响。
