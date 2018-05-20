@@ -66,3 +66,32 @@ function* demo(){
 任意一个对象的 `Symbol.iterator` 方法，等于该对象的遍历器生成函数，调用该函数
 
 由于 Generator 函数就是遍历器生成函数，因此可以把 Generator 赋值给对象的Symbol.iterator属性，从而使得该对象具有 Iterator 接口。
+
+Generator 函数执行后，会返回一个遍历器对象，遍历器对象的 `Symbol.iterator` 属性执行后返回本身。
+```javascript
+function* gen(){
+
+}
+let g = gen();
+g[Symbol.iterator]() === g; //true
+```
+
+## 2. next 方法的参数
+yield 表达式没有返回值，或者说总是返回 undefined。 next方法可以带一个参数，该参数会被当作上一个yield表达式的返回值
+```javascript
+function* f(){
+    for(var i = 0; true; i++){
+        var reset = yield i;
+        if(reset){
+            i = -1;
+        }
+    }
+}
+var g = f();
+g.next(); //{value: 0, done: false}
+g.next(); //{value: 1, done: false}
+g.next(true); //{value: 0, done: false}
+```
+如果 next 方法没传入 true， 那么 yield 表达式每次都是返回的 undefined的，知道传入了true，那么变量 reset 的值就变为 true，因此 i = -1；下次循环 i 会从 -1 开始递增。
+
+
