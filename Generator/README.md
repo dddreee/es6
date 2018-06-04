@@ -94,4 +94,206 @@ g.next(true); //{value: 0, done: false}
 ```
 如果 next 方法没传入 true， 那么 yield 表达式每次都是返回的 undefined的，知道传入了true，那么变量 reset 的值就变为 true，因此 i = -1；下次循环 i 会从 -1 开始递增。
 
+## 3. for...of循环
 
+```javascript
+function* foo(){
+    yield 1;
+    yield 2;
+    yield 3;
+    yield 4;
+    yield 5;
+    return 6;
+}
+
+for(let v of foo()){
+    console.log(v);
+}
+//1,2,3,4,5
+```
+for...of 循环，一次显示5个 yield 表达式的值。一旦 next 方法的返回对象中的 done 属性为 true , for...of 循环就会终止，且不包含该返回对象， 因此上面return 语句的返回的6不包括在 for...of 循环中。
+
+下面是一个利用 Generator 函数和 for...of 循环
+```javascript
+function* fibonacci(){
+    let [prev, curr] = [0, 1];
+    for(;;){
+        yield curr;
+        [prev, curr] = [curr, prev + curr]
+    }
+    // return curr;
+}
+for(let n of fibonacci()){
+    if(n > 1000) break;
+    console.log(n);
+}
+```
+for...of ， ... 和 Array.from 都是调用遍历器接口。因此都能将Generator函数返回的Iterator对象，作为参数
+```javascript
+function* numbers(){
+    yield 1;
+    yield 2;
+    return 3;
+    yield 4;
+}
+[...numbers()]; //[1,2]
+
+for(let n of numbers){
+    console.log(n)
+};
+//1
+//2
+
+let [x, y] = numbers();
+//x = 1, y = 2
+```
+
+## Generator.prototype.throw()
+Generator 函数返回的遍历器对象，都有一个 throw 方法，可以在函数体外抛出错误，然后再 Generator 函数体内捕获
+```javascript
+var g = function* () {
+    try{
+        yield;
+    }catch(e){
+        console.log('内部捕获', e);
+    }
+}
+
+var i = g();
+i.next();
+
+try{
+    i.throw('a');
+    i.throw('b');
+}catch(e){
+    console.log('外部捕获', e);
+}
+
+//内部捕获a
+//外部捕获b
+```
+上面的代码，连续抛出两次错误。第一次错误被 Generator 函数体内的 catch 捕获，**Generator函数内部的 catch 语句已经执行过了，不会再捕捉这个错误了，因此被函数体外的 catch 语句捕获了**
+
+throw 方法接受一个参数，这个参数会被 catch 语句接收，建议抛出 error 实例。
+命令不同。
+遍历器对象的 throw 方法和全局的 throw 
+
+```javascript
+try {
+  throw new Error('a');
+  throw new Error('b');
+} catch (e) {
+  console.log('外部捕获', e);
+}
+// 外部捕获 [Error: a]
+```
+一旦抛出了错误，try代码块中后面的代码就不会执行了。
+
+```javascript
+var g = function* () {
+  while (true) {
+    yield;
+    console.log('内部捕获', e);
+  }
+};
+
+var i = g();
+i.next();
+
+try {
+  i.throw('a');
+  i.throw('b');
+} catch (e) {
+  console.log('外部捕获', e);
+}
+// 外部捕获 a
+```
+上述代码，因为 Generator 函数中没有部署 try...catch代码块，因此抛出的错误被外部的catch代码块捕获。
+
+如果 Generator 函数内部和外部都没有部署 try...catch 代码块，抛出错误将导致程序报错并且中断执行
+
+throw 方法抛出的错误要被内部捕获，前提是必须至少执行过一次 next 方法。
+
+Generator 函数体内抛出的错误，也能被函数体外的 catch 捕获。
+
+一旦 Generator 执行过程中抛出错误，但是没被内部捕获，就不会执行下去。如果还调用了 next 方法，将返回一个 value 值是 undefined 、 done 属性是 true 的对象。js引擎认为 Generator 函数已经遍历结束了。
+
+## 5. Generator.prototype.retur()
+Generator 函数返回的遍历器对象，有一个 return 方法，可以返回给定的值，并且**终结 Generator 函数**。
+```javascript
+function* gen(){
+    yield 1;
+    yield 2;
+    yield 3;
+}
+
+var g = gen();
+g.next();           //{ value: 1, done: false }
+g.return('foo');    //{ value: 'foo', done: true }
+g.next();
+
+```
+遍历器对象g调用return 方法后，返回值的value属性就是 return 方法的参数 foo。 并且 Generator 函数就终止了， 返回 done 属性为true， 以后再调用 next 方法， done 属性总是返回true。
+
+如果 return 方法不传参数，那么返回的 value 是 undefined
+
+如果 Generator 函数内部有 try...finally 代码块， return 方法会推出到 finally 代码块执行完再执行。
+
+```javascript
+function * numbers(){
+    yield 1;
+    try{
+        yield 2;
+        yield 3;
+    }finally{
+        yield 4;
+        yield 5;
+    }
+    yield 6;
+}
+
+var g = numbers();
+g.next() // { value: 1, done: false }
+g.next() // { value: 2, done: false }
+g.return(7) // { value: 4, done: false }
+g.next() // { value: 5, done: false }
+g.next() // { value: 7, done: true }
+```
+## 6.next() 、 throw() 、 return()的共同点
+next() , throw() , return() 这三个方法本质上都是让 Generator 函数回复执行，并且使用不同的语句替换 yield 表达式。
+
+- next() 是将yield 表达式替换成一个值
+- throw() 是将yield 表达式变成一个 throw 语句
+- return() 是将yield 表达式变成一个 return 语句
+
+## 7. yield* 表达式
+如果要在 Generator 函数内部，调用另一个 Generator 函数，就需要用到 yield* 表达式。
+```javascript
+function* bar(){
+    yield 'x';
+    yield* foo();
+    yield 'y';
+}
+
+function* foo(){
+    yield 'a';
+    yield 'b';
+}
+
+//上面等同于
+// 等同于
+function* bar() {
+  yield 'x';
+  yield 'a';
+  yield 'b';
+  yield 'y';
+}
+//以及等同于
+function* bar() {
+  yield 'x';
+  for (let v of foo()) {
+    yield v;
+  }
+  yield 'y';
+}
+```
