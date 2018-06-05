@@ -297,3 +297,262 @@ function* bar() {
   yield 'y';
 }
 ```
+
+## 8.作为对象的属性的Generator 函数
+```javascript
+let obj = {
+    *myGenerator(){
+        //...
+    }
+}
+//等同于
+let obj = {
+    myGenerator: function*(){
+
+    }
+}
+```
+
+## 9.Generator 函数的this
+Generator 函数总是返回一个遍历器，es6 规定这个遍历器是 Generator 函数的实例，继承 Generator 函数 prototype 对象上的方法
+
+```javascript
+function* g(){
+
+}
+g.prototype.hello = function(){
+    return 'hi'
+}
+let obj = g()
+obj instanceof g;//true
+obj.hello(); // 'hi'
+```
+Generator 函数返回的遍历器对象，只继承函数的 prototype 对象，并不能当成构造函数使用。
+
+Generator 函数不能跟 new 命令一起用，会报错
+
+有个变通的方法，能让 Generator 函数返回一个正常的对象实例， 既可以使用 next 方法，有能获取正常的 this。 先生成一个空对象，使用 call 方法绑定 Generator 函数内部的 this 。 再调用构造函数之后， 这个空对象就是 Generator 函数的实例对象。
+```javascript
+function* F(){
+    this.a = 1;
+    yield this.b = 2;
+    yield this.c = 3;
+}
+var obj = {};
+var f = F.call(obj)
+
+f.next();  // Object {value: 2, done: false}
+f.next();  // Object {value: 3, done: false}
+f.next();  // Object {value: undefined, done: true}
+
+obj.a // 1
+obj.b // 2
+obj.c // 3
+```
+ 下面的感觉不会用到，不写了。。
+
+
+ ## 10.含义
+
+ ### Generator 与状态机
+ Generator 是实现状态机的最佳结构。
+ ```javascript
+var ticking = true;
+var clock = function(){
+    if(ticking){
+        console.log('Tick!')
+    }else{
+        console.log('Tock!')
+    }
+    ticking = !ticking
+}
+ ```
+每运行一次，状态就改变一次，可以用 Generator 函数实现
+```javascript
+var clock = function* () {
+    while (true) {
+        console.log('Tick!')
+        yield;
+        console.log('Tock!')
+        yield;
+    }
+}
+```
+Generator 实现与 ES5 相比， 少了保存状态的变量 ticking， 更安全(状态不会被非法篡改)。 Generator 之所以能不用外部变量保存状态，因为它本身就包含了一个状态信息，即目前是否处于暂停状态。
+
+### Generator 与协程
+#### (1). 协程与子例程的差异
+传统的“子例程”采用堆栈式的“后进先出”的执行方式，只有当调用的子函数完全执行完毕，才会结束执行父函数。协程则不同，多个线程(单线程情况下，即多个函数)可以并行执行，但是只有一个线程(或函数)处于正在运行的状态，其他线程(或函数)都处于暂停状态，线程(或函数)之间可以交换执行权。也就是说，一个线程(或者函数)执行到一般，可以暂停执行，将执行权交给另一个线程(或函数)，等到稍后回收执行权的时候，再恢复执行。这种可以并行执行，交换执行权的线程(或函数)，就称为协程。
+
+从实现上看，再内存中，子例程只使用一个栈，而协程是同时存在多个栈，但只有一个栈是运行状态，也就是说，协程是以多占用内存为代价，实现多任务的并行。
+
+#### (2). 协程与普通线程的差异
+不难看出，协程适用于多任务运行的环境。在这个意义上，它与普通的线程很相似，都有自己的执行上下文，可以分享全局变量。它们的不同指出在于，同意时间可以有多个线程处于运行状态，但是运行的协程只能有一个，其他协程都处于暂停状态。此外，普通的线程是抢先式的，到底哪个线程优先得到资源，必须有运行环境决定，但是协程是合作式的，执行权由协程自己分配。
+
+由于JavaScript 是单线程语言，只能保持一个调用栈。引入协程以后，每个任务可以保持自己的调用栈，这样做的最大好处，就是抛出错误的时候，可以找到原始的调用栈，不至于像异步操作的回掉函数那样，一旦出错，原始的调用栈就结束 
+
+Generator 函数是ES6 对协程的实现，但属于不完全实现。Generator 函数被称为 "半协程", 意思只有 Generator 函数的调用者，才能将程序的执行权还给 Generator 函数。 如果是完全执行的协程，任何函数都可以让暂停的协程继续执行。
+
+如果将 Generator 函数当作协程，完全可以将多个需要互相写作的任务协程Generator 函数，他们之间使用yield 表达式交换控制权。
+
+### Generator 与上下文
+
+JavaScript代码运行时，会产生一个全局的上下文环境(context，又称运行环境)，包含了当前所有的变量和对象，然后，执行函数(或块级代码)的时候，又会在当前上下文环境的商城，产生一个函数运行的上下文，变成当前(active)的上下文，由此形成一个上下文环境的堆栈(context stack)。
+
+这个堆栈是"后进先出"的数据结构，最后产生的上下文环境首先执行完成，推出堆栈，然后再执行完成它下层的上下文，直至所有代码执行完成，堆栈清空。
+
+Generator 函数不是这样，它执行产生的上下文环境，一旦遇到yield 命令，就会暂时推出堆栈，但是并不消失，里面所有的变量和对象都会冻结再当前状态，等到对它执行 next 命令时，这个上下文环境又会重新加入调用栈，冻结的变量和对象恢复执行。
+
+```javascript
+function* gen(){
+    yield 1;
+    return 2;
+}
+let g = gen();
+console.log(
+    g.next().value,
+    g.next().value,
+)
+```
+上面代码中，第一次执行g.next()时，Generator 函数gen的上下文会加入堆栈，即开始运行gen内部的代码。等遇到yield 1时，gen上下文退出堆栈，内部状态冻结。第二次执行g.next()时，gen上下文重新加入堆栈，变成当前的上下文，重新恢复执行。
+
+## 11.应用
+### (1)异步操作的同步化表达
+```javascript
+
+function* loadUI(){
+    showLoadingScreen();
+    yield loadUIDataAsynchronously();
+    hideLoadingScreen();
+}
+var loader = loadUI();
+//加载ui
+loader.next();
+
+//卸载ui
+loader.next();
+```
+
+### (2)控制流管理
+如果一个多布操作非常耗时，采用回调函数
+```javascript
+step1(function (value1) {
+  step2(value1, function(value2) {
+    step3(value2, function(value3) {
+      step4(value3, function(value4) {
+        // Do something with value4
+      });
+    });
+  });
+});
+```
+
+采用 Promise 改写
+```javascript
+Promise.resolve(step1)
+    .then(step2)
+    .then(step3)
+    .then(step4)
+    .then(value4 => {
+
+    }, err => {
+
+    }).done();
+```
+
+用 Generator 进一步改善代码
+```javascript
+function* longRunningTast(value1){
+    try{
+        var value2 = yield step1(value);
+        var value3 = yield step2(value1);
+        var value4 = yield step3(value3);
+        var value5 = yield step4(value4);
+    }
+}
+
+function scheduler(task){
+    var taskObj = task.next(task.value);
+    if(!taskObj){
+        task.value = taskObj.value;
+        return scheduler(task)
+    }
+}
+scheduler(longRunningTast(initialValue))
+```
+
+还可以用 for...of 循环
+```javascript
+
+let steps = [step1Func, step2Func, step3Func]
+
+function* iterateSteps(steps){
+  for (var i=0; i< steps.length; i++){
+    var step = steps[i];
+    yield step();
+  }
+}
+
+let jobs = [job1, job2, job3];
+
+function* iterateJobs(jobs){
+  for (var i=0; i< jobs.length; i++){
+    var job = jobs[i];
+    yield* iterateSteps(job.steps);
+  }
+}
+
+for (var step of iterateJobs(jobs)){
+  console.log(step.id);
+}
+```
+上面代码中，数组steps封装了一个任务的多个步骤，Generator 函数iterateSteps则是依次为这些步骤加上yield命令。
+
+最后，就可以用for...of循环一次性依次执行所有任务的所有步骤。
+
+再次提醒，上面的做法只能用于所有步骤都是同步操作的情况，不能有异步操作的步骤。如果想要依次执行异步的步骤，必须使用后面的《异步操作》一章介绍的方法。
+
+### (3) 部署 Iterator 接口
+利用 Generator 函数，可以在任意对象上部署 Iterator 接口。
+```javascript
+
+function* iterEntries(obj) {
+  let keys = Object.keys(obj);
+  for (let i=0; i < keys.length; i++) {
+    let key = keys[i];
+    yield [key, obj[key]];
+  }
+}
+
+let myObj = { foo: 3, bar: 7 };
+
+for (let [key, value] of iterEntries(myObj)) {
+  console.log(key, value);
+}
+
+```
+
+### (4). 作为数据结构
+Generator 可以看作时数据结构，因为Generator函数可以返回一系列的值，这意味着它可以对任意表达式，提供类似数组的接口
+```javascript
+function* doStuff(){
+    yield fs.readFile.bind(null, 'hello.txt');
+    yield fs.readFile.bind(null, 'world.txt');
+    yield fs.readFile.bind(null, 'and-such.txt');
+}
+
+for (let task of doStuff()) {
+  // task是一个函数，可以像回调函数那样使用它
+}
+```
+
+使用es5用数组模拟Genrator
+```javascript
+function doStuff(){
+    return [
+        fs.readFile.bind(null, 'hello.txt'),
+        fs.readFile.bind(null, 'world.txt'),
+        fs.readFile.bind(null, 'and-such.txt')
+    ];
+}
+```
