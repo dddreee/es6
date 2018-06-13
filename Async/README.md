@@ -134,4 +134,151 @@ async function f(){
         console.error(e)
     }
 }
+
+const superagent = require('superagent')
+const NUM_RETRIES = 3;
+async function test(){
+    let i ;
+    for(i = 0 ; i < NUM_RETRIES; ++i){
+        try {
+            await superagent.get('http://google.com/this-throws-an-error');
+            break;
+        }catch(e){
+
+        }
+    }
+    console.log(i)
+}
+
+test()
 ```
+上面的代码，如果await操作成功，就是使用 break 语句退出循环； 如果失败就会进入下一个循环。
+
+### 使用注意点
+- await 命令后面的Promise对象，运行结果可能是 rejected ， 最好把 await 命令放在 try...catch 代码块中
+
+- 多个 await 命令后面的异步操作，不存在继发关系， 最好让它们同时出发。
+```javascript
+let foo = await getFoo();
+let bar = await getBar();
+
+// 写法一
+let [foo, bar] = await Promise.all([getFoo(), getBar()]);
+
+// 写法二
+let fooPromise = getFoo();
+let barPromise = getBar();
+let foo = await fooPromise;
+let bar = await barPromise;
+```
+
+- await 命令只能再 async 函数中使用，如果用在普通函数， 会报错。
+
+## 4. async 函数的实现原理
+async 函数的实现原理，就是将 Generator 函数和自动执行器， 包装在一个函数里。
+```javascript
+async function fn(args){
+    //...
+}
+function fn(args){
+    return spawn(function* (){
+
+    })
+}
+```
+所有的async 函数都可以写成上面的第二种形式， spawn是自动执行其。
+```javascript
+function apawn(genF){
+    return new Promise(function(resolve, reject){
+        const gen = genF();
+
+        function step(nextF){
+            let next;
+            try{
+                next = nextF()
+            }catch(e){
+                return reject(e)
+            }
+
+            if(next.done){
+                return resolve(next.value)
+            }
+            Promise.resolve(next.value).then(function(v){
+                step(function(){
+                    return gen.next(v)
+                })
+            }, function(e){
+                step(function(){
+                    return gen.throw(e)
+                })
+            });
+        }
+
+        step(function(){
+            return gen.next(undefined)
+        })
+    })
+}
+```
+
+## 5.与其他异步处理方法的比较
+一个例子，某个DOM元素上面，部署了一系列动画，前一个结束才开始后一面，如果有一个动画出错，就不再往下执行，返回上一个成功执行的动画的返回值。
+
+1.Promise
+```javascript
+function chainAnimationsPromise(elem, animations){
+    let ret = null;
+
+    let p = Promise.resolve();
+
+    for(let anim of animations){
+        p = p.then(function(val){
+            ret = val;
+            return anim(elem)
+        })
+    }
+    return p.catch(function(e){
+
+    }).then(function(){
+        return ret;
+    })
+}
+```
+Promise的写啊比回调函数好看些，但是语义上不明显
+
+2. Generator 函数
+```javascript
+function chainAnimaionsGenerator(elem, animations){
+    return spawn(function*(){
+        let ret = null;
+        try{
+            for(let anim of animations){
+                ret = yield anim(elem)
+            }
+        }catch(e){
+
+        }
+        return ret
+    })
+}
+```
+上面代码使用 Generator 函数遍历了每个动画，语义比 Promise 写法更清晰，用户定义的操作全部都出现在spawn函数的内部。这个写法的问题在于，必须有一个任务运行器，自动执行 Generator 函数，上面代码的spawn函数就是自动执行器，它返回一个 Promise 对象，而且必须保证yield语句后面的表达式，必须返回一个 Promise。
+
+3. async 函数
+```javascript
+async function chainAnimationsAsync(elem, animations){
+    let ret = null;
+    try{
+        for(let anim of animations){
+            ret = await anim(elem)
+        }
+    }catch(e){
+
+    }
+
+    return ret
+}
+```
+可以看到 Async 函数的实现最简洁，最符合语义，几乎没有语义不相关的代码。它将 Generator 写法中的自动执行器，改在语言层面提供，不暴露给用户，因此代码量最少。如果使用 Generator 写法，自动执行器需要用户自己提供。
+
+## 6. 实例：按顺序完成异步操作
