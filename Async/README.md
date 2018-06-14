@@ -282,3 +282,43 @@ async function chainAnimationsAsync(elem, animations){
 可以看到 Async 函数的实现最简洁，最符合语义，几乎没有语义不相关的代码。它将 Generator 写法中的自动执行器，改在语言层面提供，不暴露给用户，因此代码量最少。如果使用 Generator 写法，自动执行器需要用户自己提供。
 
 ## 6. 实例：按顺序完成异步操作
+实际开发中，经常遇到一组异步操作，需要按照顺序完成。
+
+Promise 写法
+```javascript
+function logInOrder(urls){
+    const textPromises = urls.map(url => {
+        return fetch(url).then(res => res.text())
+    })
+
+    textPromises.reduce((chain, textPromise) => {
+        return chain.then(() => textPromise).then(text => console.log(text))
+    }, Promise.resolve())
+}
+```
+上面的代码使用 fetch 方法， 同时远程读取一组 URL ， 每个 fetch 操作都返回一个 Promise 对象， 放入 textPromises 数组， 然后用 reduce 方法依次处理每个 Promise 对象， 然后再使用 then ， 将所有的 Promise 对象连起来。
+
+用 async 实现
+```javascript
+async function logInOrder(urls){
+    for(const url of urls){
+        const res = await fetch(url);
+        console.log(await res.text());
+    }
+}
+```
+上面的代码虽简化了，但是所有的远程操作都是继发的，效率比较差，我们可以并发发出远程请求。
+```javascript
+async function logInorder(urls){
+    const textPromises = urls.map(async url => {
+        const res = await fetch(url);
+        return res.text();
+    })
+    for(const textPromise of textPromises){
+        console.log(await textPromise)
+    }
+}
+```
+
+## 7. 异步遍历的接口
+TODO： ES2018的内容。。暂时不看了。
