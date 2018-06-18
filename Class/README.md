@@ -133,7 +133,7 @@ export default class myClass{
 bar和snaf都是Symbol值，导致第三方无法获取到它们，因此达到了私有方法和私有属性的效果。
 
 ### 私有属性的提案
-有一个提案，为 class 加了私有属性。 在属性名之前添加 # 表示私有
+有一个[提案](https://github.com/tc39/proposal-private-methods)，为 class 加了私有属性。 在属性名之前添加 # 表示私有
 ```javascript
 calss Point{
     #x = 0;
@@ -350,3 +350,67 @@ Foo.prop = 1; //目前只有这种写法可行
 目前有一个静态属性的[提案](https://github.com/tc39/proposal-class-fields), 对实例属性和静态属性都规定了新的写法。
 
 (1). 类的实例属性。
+类的实例属性可以用等式，写入类的定义中
+```javascript
+class MyClass{
+    myProp = 42;
+    constructor(){
+        console.log(this.myProp)
+    }
+
+}
+
+// 以前定义实例属性，都是写在 constructor 中
+class ReactCounter extends React.Component{
+    constructor(props){
+        super(props);
+        this.state = {
+            count: 0
+        }
+    }
+}
+
+// 新写法定义
+class ReactCounter extends React.Component{
+    state = {
+        count: 0
+    }
+}
+
+// 
+class ReactCounter extends React.Component{
+    state;
+    constructor(props){
+        super(props)
+        this.state = {
+            count: 0
+        }
+    }
+}
+```
+
+(2). 类的静态属性
+加上 static 关键词即可
+```javascript
+class MyClass {
+    static myProp = 42;
+    constructor(){
+        console.log(MyClass.myProp)
+    }
+}
+
+//老写法
+class Foo{
+
+}
+Foo.prop = 1;
+
+//新写法
+class Foo {
+    static prop = 1;
+}
+```
+
+
+### 14. new.target属性
+new 是从后遭函数生成的实例对象的命令。 new.target 属性， 一般用在构造函数中，返回 new 命令的那个后遭函数。  如果构造函数不是通过 new 命令调用，那么 new.target 返回undefined。
