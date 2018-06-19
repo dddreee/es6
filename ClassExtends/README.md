@@ -31,22 +31,22 @@ class ColorPoint extends Point{
 }
 ```
 
-另外再子类的构造函数中， 必须调用 super 方法之后，才能使用 this 关键字。 子类实例的构建时基于对父类实例的加工。
+另外再子类的构造函数中， 必须调用 `super` 方法之后，才能使用 `this` 关键字。 子类实例的构建时基于对父类实例的加工。
 
 父类的静态方法也会被子类继承。
 
 ## 2. Object.getPrototypeOf()
 
-Object.getPrototypeOf 方法可以从子类上获取父类
+`Object.getPrototypeOf` 方法可以从子类上获取父类
 ```javascript
 Object.getPrototypeOf(ColorPoint) === Point; //true
 ```
 
 ## 3. super 关键字
-super 关键字既可以当函数使用，也可以当对象用。
-- super 作为函数调用时，代表父类的构造函数。 ES6 要求， 子类的构造函数必须执行一次 super 函数。
+`super` 关键字既可以当函数使用，也可以当对象用。
+- `super` 作为函数调用时，代表父类的构造函数。 `ES6` 要求， 子类的构造函数必须执行一次 `super` 函数。
 
-super 虽然代表了父类的构造函数，但是返回的是子类的实例。 super 内部的 this指的是B， 因此 super() 在这里相当于 A.prototype.constructor.call(this)
+`super` 虽然代表了父类的构造函数，但是返回的是子类的实例。 `super` 内部的 `this` 指的是 `B`， 因此 `super()` 在这里相当于 `A.prototype.constructor.call(this)`
 ```javascript
 class A{
     constructor(){
@@ -61,9 +61,9 @@ class B extends A {
 new B(); //B
 new A(); //A
 ```
-作为函数时， super 只能在子类的构造函数之中。
+作为函数时， `super` 只能在子类的构造函数之中。
 
-- super 作为对象，在普通方法中，指向父类的原型对象； 在静态方法中，指向父类。
+- `super` 作为对象，在普通方法中，指向父类的原型对象； 在静态方法中，指向父类。
 ```javascript
 class A {
     p(){
@@ -80,9 +80,9 @@ class B extends A {
 
 let b = new B(); // 2
 ```
-子类 B 中的 super.p(), 就是将 super 作为对象使用， 此时 super 在普通方法中指向 A.prototype。
+子类 B 中的 `super.p()`, 就是将 `super` 作为对象使用， 此时 `super` 在普通方法中指向 `A.prototype`。
 
-需要注意的是，super 指向的是父类的 prototype 对象， 定义在父类实例上的方法或属性无法通过 super 调用
+需要注意的是， `super` 指向的是父类的 prototype 对象， 定义在父类实例上的方法或属性无法通过 `super` 调用
 
 ```javascript
 class A {
@@ -147,7 +147,7 @@ class B extends A {
 }
 ```
 
-在静态方法中， super 指向父类。
+在静态方法中， `super` 指向父类。
 ```javascript
 class Parent {
     static myMethod(msg){
@@ -160,6 +160,67 @@ class Parent {
 }
 
 class Child extends Parent {
-    
+    static myMethod(msg){
+        super.myMethod(msg)
+    }
+
+    myMethod(msg){
+        super.myMthod(msg)
+    }
+}
+Child.myMethod(1); //static 1
+new Child().myMethod(2); // instance 2
+```
+另外在子类的静态方法中通过 `super` 调用父类方法时，方法内部的 `this` 指向当前子类，而非子类的实例。
+```javascript
+class A {
+    print(){
+        console.log(this.x)
+    }
+}
+class B extends A {
+    constructor(){
+        super();
+        this.x = 1;
+    }
+    static m(){
+        super.print()
+    }
+}
+B.m(); //undefined
+
+B.x = 3
+B.m(); //3
+```
+
+---
+### 总结下：
+- `super` 作为函数。
+    - 只能在子类的 `constructor` 方法中调用
+    - `super()` 执行时， 内部的 this 指向 B的构造函数。。或者说是 `A.prototype.constructor.call(this)`
+
+- `super`作为对象
+    - 在普通方法中
+        - `super` 指向父类的原型，定义在父类实例上的方法或属性无法通过 super 调用
+        - 通过 `super` 调用父类的方法，方法内部的 `this` 指向当前的子类实例
+        - 通过 `super` 对某个属性赋值， 此时 `super` 就是 `this，` 赋值的属性会变成子类实例的属性
+    - 在静态方法中
+        - `super` 指向父类
+        - **在子类的静态方法中通过 `super` 调用父类的静态方法时，方法内部的 `this` 指向当前的子类，而非子类的实例**
+
+使用 `super` 的时候，必须显示的指定作为函数还是对象使用。否则会报错
+```javascript
+class A {
+
+}
+class B extends A {
+    constructor(){
+        super();
+        console.log(super); //报错
+    }
 }
 ```
+
+上面的代码会报错，因为系统无法将 super 当作对象还是函数。
+
+`super.valueOf()` 表明 `super` 时一个对象，由于 `super` 使得 `this` 指向 `B` 的实例， 所以 `super.valueOf()` 返回的是一个 `B` 的实例
