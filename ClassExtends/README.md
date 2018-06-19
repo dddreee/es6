@@ -223,4 +223,102 @@ class B extends A {
 
 上面的代码会报错，因为系统无法将 super 当作对象还是函数。
 
-`super.valueOf()` 表明 `super` 时一个对象，由于 `super` 使得 `this` 指向 `B` 的实例， 所以 `super.valueOf()` 返回的是一个 `B` 的实例
+`super.valueOf()` 表明 `super` 时一个对象，由于 `super` 使得 `this` 指向 `B` 的实例， 所以 `super.valueOf()` 返回的是一个 `B` 的实例。
+
+
+## 4. 类的 prototype 属性和 `__proto__` 属性
+大多数浏览器的 ES5 实现中， 每一个对象都有 `__proto__`属性，指向对应的构造函数的 prototype 属性。 Class 作为构造函数的语法糖， 同时有 `prototype` 属性和 `__proto__` 属性，因此存在两条继承连
+
+1. 子类的 `__proto__` 属性，表示构造函数的继承，总是指向父类。
+2. 子类的 `prototype` 属性的 `__proto__` 属性， 表示方法的继承，总是指向父类的 `prototype` 属性
+```javascript
+class A{
+
+}
+class B extends A {}
+
+B.__proto__ === A; // true
+B.prototype.__proto__ === A.prototype ; //true
+
+// 实现方式
+class A {
+
+}
+class B {
+
+}
+// B的实例继承 A 的实例
+Object.setPrototypeOf(B.prototype, A.prototype)
+
+// B 继承 A 的静态属性
+Object.setPrototypeOf(B, A)
+
+```
+
+可以这样理解
+ - 作为一个对象，子类 `B` 的原型是父类 `A` 
+ - 作为一个构造函数， 子类 `B` 的原型对象是父类 `A` 的原型对象的实例
+
+
+ ### `extends` 的继承目标
+ `extends` 关键字后面可以跟多种类型的值
+ - 第一种特殊情况，子类继承 `Object` 类
+ - 第二种特殊情况，不存在任何继承
+ - 第三种特殊情况，子类继承 `null`
+
+ ### 实例的 `__proto__` 属性
+ 子类实例的 `__proto__` 属性的 `__proto__` 指向父类实例的 `__proto__` 属性。也就是说 子类的原型的原型，是父类的原型
+ ```javascript
+class A{}
+class B extends A {}
+let a = new A()
+let b = new B();
+
+B.prototype instanceof A; //true
+B.prototype.__proto__ === A.prototype === b.__proto__.__proto__ === a.__proto__; //true
+
+a.__proto__ === A.prototype
+b.__proto__ === B.prototype
+
+B.__proto__ === A
+b.__proto__.__proto__ === a.__proto__
+ ```
+
+ ## 5. 原生构造函数的继承
+ - Boolean()
+ - Number()
+ - String()
+ - Array()
+ - Date()
+ - Function()
+ - RegExp()
+ - Error()
+ - Object()
+
+ 以前这些构造函数是无法继承。比如不能自己定义一个 Array 的子类
+ ```javascript
+function MyArray(){
+    Array.apply(this, arguments)
+}
+
+MyArray.prototype = Object.create(Array.prototype, {
+    constructor: {
+        value: MyArray,
+        writable: true,
+        configurable: true,
+        enumerable: true
+    }
+})
+ ```
+ 上面定义了一个继承 Array 的 MyArray 类。但是这个类的行为与 Array 完全不一致
+ ```javascript
+var colors = new MyArray();
+colors[0] = 'red';
+colors.length; //0
+
+colors.length = 0;
+colors[0]; //'red'
+ ```
+
+ ---
+ 划重点。。 下面的有点麻烦
