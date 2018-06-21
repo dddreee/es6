@@ -311,3 +311,21 @@ console.log(A);
 
 ## 10. import()
 ### 简介
+import 命令会被JavaScript 引擎静态分析，咸鱼模块内的其他语句执行。 这样的设计固然有利于编译器提高效率，但也导致无法在运行时加载模块。因此 ，有了一个[提案](https://github.com/tc39/proposal-dynamic-import)，建议引入 import() 函数，完成动态加载。
+
+import 函数的参数时要加载的模块的位置， 返回一个 Promise 对象。
+```javascript
+const main = document.querySelector('main');
+import(`./section-modules/some.js`).then(module => {
+    module.loadPageInto(main)
+}).catch(err => {
+    main.textContent = err.message
+})
+```
+
+import() 函数可以用在任何地方。import() 类似于 Node 的 require 方法，区别主要是前者是异步加载，后者是同步加载。
+
+### 注意点
+- import() 加载模块成功后，这个模块会作为一个对象，当作 then 方法的参数。
+- 如果模块有 default 输出接口，可以用参数直接获得
+- import() 也可以用在 async 函数中
