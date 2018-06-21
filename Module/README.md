@@ -165,3 +165,122 @@ import React from 'React';
 ```
 
 ## 5. 模块的整体加载
+除了指定加载某个输出值，还可以使用星号 * 号，整体加载。
+```javascript
+// circle.js
+export function area(radius){
+    return Math.PI * radius * radius
+}
+
+export function circumference(radius){
+    return 2 * Math.PI * radius
+}
+
+// 加载这个模块
+import {area, circumference} from './circle'
+console.log('圆面积: ' + area(4));
+console.log('圆周长: ' + circumference(14))
+
+// 整体加载
+import * as circle from './circle'
+console.log('圆面积: ' + circle.area(4))
+console.log('圆周长: ' + circle.circumference(14))
+```
+
+注意，模块整体加载所在的那个对象（上例是 circle ），应该是可以静态分析的，所以不允许运行时改变。当作只读使用
+
+## 6. export default 命令
+使用 import 命令时，用户需要知道索要加载的变量名或者函数名。 为了给用户提供方便， 提供了 export default 命令，为模块指定默认输出。
+```javascript
+export default function(){
+    console.log('foo')
+}
+
+import customName from './export-default'
+customName();
+```
+加载该模块时， import 命令可以为该匿名函数指定任务的名字。
+
+下面比较一下默认输出和正常输出
+```javascript
+// 第一组
+export default function crc32(){}
+import crc32 from 'crc32'
+
+// 第二组
+export function crc32 (){}
+import {crc32} from 'crc32'
+```
+- export default 命令用于指定模块的默认输出
+- 一个模块只有一个默认输出，export default 命令只能使用一次。因此 import 命令后面才不加大括号，只有唯一对应的 export default 命令。
+- 本质上， export default 就是输出一个叫 default 的变量或者方法。
+- export default 后面不能跟变量声明语句
+- export default 后面可以直接写一个值
+
+有了 export default 命令， 输入模块时就非常直观了。
+```javascript
+import _ from 'lodash'
+```
+
+## 7. export 与 import 的复合写法
+如果在一个模块之中，先输入后输出同一个模块， import 语句可以与 export 写在一起
+```javascript
+export {foo, bar} from 'my_module';
+
+// 可以理解为
+import {foo, bar} from 'my_module';
+export {foo, bar}
+```
+export 和 import 语句写成一行的时候， foo 和 bar 实际上并没有被导入到当前模块，相当于时对外转发了这两个接口，导致当前模块不能直接使用 foo 和 bar
+
+模块的接口改名和整体输出
+```javascript
+export { foo as myFoo} from 'my_module';
+export * from 'my_module'
+```
+
+默认接口的写法如下：
+```javascript
+export { default } from 'foo';
+```
+
+具名接口改为默认接口写法如下。
+```javascript
+export {es6 as default} from './someModule'
+// 相当于
+import { es6 } from './someModule'
+export default es6
+```
+
+默认接口也可以改名为具名接口
+```javascript
+export {default as es6} from './someModule'
+```
+
+下面三种 import 语句， 没有对应的复合写法
+```javascript
+import * as someIdentifier from "someModule";
+import someIdentifier from 'someModule';
+import someIdentifier, {namedIdentifier} from "someModule";
+```
+
+为了做到形式的对称，现在[提案](https://github.com/leebyron/ecmascript-export-default-from)，补上上面的三种复合写法
+```javascript
+export * as someIdentifier from "someModule";
+export someIdentifier from "someModule";
+export someIdentifier, { namedIdentifier } from "someModule";
+```
+
+## 8. 模块的继承
+模块之间也能继承。
+
+假设又一个 circleplus 模块，继承了 circle 模块
+```javascript
+// circleplus.js
+export * from 'circle';
+export var e = 2.124123154123;
+export default function(x) {
+    return Math.exp(x)
+}
+```
+上面的代码中的 export * , 表示再输出的 circle 模块的所有属性和方法， 注意， export * 会忽略 circle 模块的 default 方法。 然后上面的代码又输出自定义的变量 e 和默认方法。
