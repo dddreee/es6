@@ -284,3 +284,30 @@ export default function(x) {
 }
 ```
 上面的代码中的 export * , 表示再输出的 circle 模块的所有属性和方法， 注意， export * 会忽略 circle 模块的 default 方法。 然后上面的代码又输出自定义的变量 e 和默认方法。
+
+这是也可以将 circle 的属性或方法，改名后再输出
+```javascript
+// circleplus.js
+export {area as circleArea} from 'circle';
+```
+
+## 9. 跨模块常量
+const 声明的常量只在当前代码块有效。如果想设置跨模块的常量，可以采用下面的写法
+```javascript
+// constants.js 模块
+export const A = 1;
+export const B = 3;
+export const C = 4;
+
+// test1.js
+import * as constants from './constants'
+console.log(constants.A); //1
+
+// test2.js
+import {A, B} from './constants';
+console.log(A);
+```
+如果要使用的常量非常多，可以专门建一个 constants 目录，将各种常量卸载不同的文件里面,，然后将这些文件输出的常量， 合并再 index.js 里面，使用的时候直接加载 index.js 就好了
+
+## 10. import()
+### 简介
